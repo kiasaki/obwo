@@ -1,0 +1,56 @@
+# obwo
+
+_A cloud implementation, for fun and 0 profit_
+
+- libraries
+  - filestore
+- internal
+  - filestore
+  - auth
+  - trace
+- services
+  - auth
+    - register
+    - login
+    - settings
+    - takeout
+  - mail
+    - read
+    - send
+    - organize
+  - calendar
+    - views
+    - create
+    - import
+  - contacts
+    - list
+    - create
+  - tasks
+    - list / adjust
+    - create
+  - drive
+    - navigate
+    - rename / move / delete
+    - upload
+    - sync?
+  - docs
+    - document
+    - spreadsheet
+    - slides
+  - notes
+  - photos
+    - load from drive
+    - thumbnails
+    - exif
+  - search
+    - proxy
+    - tools
+      - weather
+      - calculator
+      - unit conversions
+      - password generator
+  - news
+    - rss fetch
+    - fetch page and sanitize
+  - maps
+    - render osm

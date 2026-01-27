@@ -1,0 +1,98 @@
+@font-face { font-family: "font"; src: url("/static/lib/font.ttf") format("truetype"); }
+:root {
+  --font: "font", sans-serif;
+  --size: 18px;
+  --foreground: #222;
+  --background: #fff;
+  --border: #bbb;
+}
+body {
+  margin: 0;
+  line-height: 1.33;
+  font-size: var(--size);
+  font-family: var(--font);
+  color: var(--foreground);
+  background: var(--background);
+}
+* {
+  box-sizing: border-box;
+}
+a, a:visited {
+  color: var(--border);
+}
+
+.title {
+  font-size: 32px;
+  margin: 0 0 16px;
+}
+.field {
+  margin-bottom: 16px;
+}
+.field .input {
+  width: 100%;
+}
+.label {
+  display: block;
+  font-size: calc(var(--size) - 2px);
+  margin-bottom: 4px;
+}
+.input {
+  padding: 8px 16px;
+  min-width: 240px;
+  font-size: var(--size);
+  font-family: var(--font);
+  line-height: 1.333;
+  color: var(--foreground);
+  background: transparent;
+  border: 1px solid var(--border);
+  outline: 0;
+  border-radius: 0;
+}
+.button {
+  border: 0;
+  padding: 12px 16px;
+  color: var(--background);
+  background: var(--foreground);
+  font-size: var(--size);
+  font-family: var(--font);
+  text-align: center;
+  cursor: pointer;
+}
+.icon {
+  width: 20px;
+  height: 20px;
+  vertical-align:middle;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.container {
+  max-width: 960px;
+  padding: 16px;
+  margin: 0 auto;
+  border: 1px solid var(--border);
+  border-width: 0 1px 0 1px;
+  min-height: 100vh;
+}
+.auth {
+  max-width: 300px;
+  padding-top: 15vh;
+}
+
+.truncate { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.block { display: block; }
+.flex { display: flex; }
+.flex-1 { flex: 1; }
+.p-2 { padding: 8px; }
+.ml-2 { margin-left: 8px; }
+.mt-8 { margin-top: 32px; }
+.w-full { width: 100%; }
+.error { color: red; }
+.faded { opacity: 0.6; }
+.hidden { display: none; }
+.text-center { text-align: center; }
+.border-r, .border-t, .border-b { border: 0 solid var(--border); }
+.border-t { border-top-width: 1px; }
+.border-b { border-bottom-width: 1px; }

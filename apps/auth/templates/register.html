@@ -1,0 +1,22 @@
+{{template "header.html" .}}
+<form class="container auth" method="post">
+  <h1 class="title">Register</h1>
+
+  <div class="field">
+    <label class="label">Username</label>
+    <input class="input" type="text" name="username" autofocus />
+  </div>
+  <div class="field">
+    <label class="label">Password</label>
+    <input class="input" type="password" name="password" />
+  </div>
+  <div class="field">
+    <label class="label">Repeat Password</label>
+    <input class="input" type="password" name="passwordRepeat" />
+  </div>
+  <button class="button w-full" type="submit">Create my account</button>
+
+  <div class="text-center mt-8">
+    Have an account? <a href="/">Login</a>
+  </div>
+</form>
