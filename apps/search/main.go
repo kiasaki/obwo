@@ -13,25 +13,20 @@ var staticFS embed.FS
 var templatesFS embed.FS
 
 func main() {
-	server := app.NewServer("auth")
-	server.Port = 9001
+	server := app.NewServer("search")
+	server.Port = 9002
 	server.Templates(templatesFS)
 	server.Static(staticFS)
-	server.Handle("/register/", handleRegister)
-	server.Handle("/{$}", handleLogin)
+	server.Handle("/{$}", handleSearch)
 	server.Handle("/", handleNotFound)
 	server.Start()
 }
 
-func handleLogin(c *app.Context) {
-	c.Render(200, "login", util.J{
-		"title": "Login",
-	})
-}
-
-func handleRegister(c *app.Context) {
-	c.Render(200, "register", util.J{
-		"title": "Register",
+func handleSearch(c *app.Context) {
+	q := c.Req.URL.Query().Get("q")
+	c.Render(200, "search", util.J{
+		"title": q,
+		"q":     q,
 	})
 }
 

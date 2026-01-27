@@ -60,6 +60,6 @@ func (s *Server) wrap(handler func(c *Context)) func(w http.ResponseWriter, r *h
 }
 
 func (s *Server) Start() {
-	log.Log("listening on port %d", s.Port)
+	log.Log("listening on %d", s.Port)
 	http.ListenAndServe("0.0.0.0:"+util.IntToString(s.Port), s.Mux)
 }

@@ -1,0 +1,25 @@
+{{template "header.html" .}}
+{{if not .q}}
+<form class="search">
+  <h1 class="title">Obwo Search</h1>
+  <form class="flex">
+    <input class="input flex-1" type="text" name="q" autofocus />
+    <button class="button" type="submit">Search</button>
+  </form>
+</form>
+{{else}}
+<div class="container">
+  <h1 class="title">Obwo Search</h1>
+  <form class="flex">
+    <input class="input flex-1" type="text" name="q" tabindex="-1" autofocus />
+    <button class="button" type="submit">Search</button>
+  </form>
+
+  {{range $i, $v := .results}}
+    <div class="search-result">
+      <a class="truncate" href="{{.url}}" tabindex="{{$i}}">{{.title}}</a>
+      <div>{{.description}}</div>
+    </div>
+  {{end}}
+</div>
+{{end}}

@@ -1,1 +1,3 @@
+build
 apps/auth/static/lib
+apps/search/static/lib
