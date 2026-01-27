@@ -10,5 +10,39 @@
   margin: 0 auto;
   padding: 20vh 16px;
 }
+.search-result {
+  margin: 16px auto;
+}
+.search-result a {
+  display: block;
+  margin-bottom: 8px;
+}
+.search-result span {
+  font-size: calc(var(--size) - 4px);
+}
+.search-result img {
+  display: inline-block;
+  vertical-align: sub;
+  margin-right: 4px;
+}
 </style>
 <title>Obwo Search{{if .title}} | {{.title}}{{end}}</title>
+<div class="header">
+  <div class="container flex">
+    <h1 class="title flex-1">Obwo Search</h1>
+    <div class="flex gap-2">
+      <a href="{{app "mail"}}">Mail</a>
+      <a href="{{app "calendar"}}">Calendar</a>
+      <a href="{{app "notes"}}">Notes</a>
+      <a href="{{app "tasks"}}">Tasks</a>
+      <a href="{{app "drive"}}">Drive</a>
+      <a href="{{app "search"}}">Search</a>
+      <a href="{{app "news"}}">News</a>
+      {{if currentUser}}
+        <a href="{{app "auth"}}"><b>{{index currentUser "username"}}</b></a>
+      {{else}}
+        <a href="{{app "auth"}}"><b>Login</b></a>
+      {{end}}
+    </div>
+  </div>
+</div>

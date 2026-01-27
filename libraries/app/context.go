@@ -5,6 +5,7 @@ import (
 	"html/template"
 	"net/http"
 	"obwo/libraries/util"
+	"strings"
 )
 
 type Context struct {
@@ -40,5 +41,20 @@ func (c *Context) Render(code int, name string, values util.J) {
 }
 
 func (c *Context) Funcs() template.FuncMap {
-	return template.FuncMap{}
+	return template.FuncMap{
+		"safe": func(s string) template.HTML {
+			return template.HTML(s)
+		},
+		"app": func(name string) template.URL {
+			scheme := "https://"
+			if strings.Contains(c.Req.Host, "localhost") {
+				scheme = "http://"
+			}
+			parts := strings.SplitN(c.Req.Host, ".", 2)
+			return template.URL(scheme + name + "." + parts[1])
+		},
+		"currentUser": func() util.J {
+			return nil
+		},
+	}
 }

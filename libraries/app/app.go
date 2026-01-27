@@ -2,6 +2,7 @@ package app
 
 import (
 	"embed"
+	"fmt"
 	"html/template"
 	"math/rand"
 	"net/http"
@@ -53,6 +54,7 @@ func (s *Server) wrap(handler func(c *Context)) func(w http.ResponseWriter, r *h
 			if err := recover(); err != nil {
 				log.Log("ERROR %v", err)
 				log.Log("%s", string(debug.Stack()))
+				c.Text(500, fmt.Sprintf("ERROR %v", err))
 			}
 		}()
 		handler(c)

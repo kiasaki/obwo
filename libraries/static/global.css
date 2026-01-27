@@ -2,6 +2,7 @@
 :root {
   --font: "font", sans-serif;
   --size: 18px;
+  --primary: #34baf5;
   --foreground: #222;
   --background: #fff;
   --border: #bbb;
@@ -18,7 +19,7 @@ body {
   box-sizing: border-box;
 }
 a, a:visited {
-  color: var(--border);
+  color: var(--primary);
 }
 
 .title {
@@ -52,7 +53,7 @@ a, a:visited {
   border: 0;
   padding: 12px 16px;
   color: var(--background);
-  background: var(--foreground);
+  background: var(--primary);
   font-size: var(--size);
   font-family: var(--font);
   text-align: center;
@@ -72,9 +73,14 @@ a, a:visited {
   max-width: 960px;
   padding: 16px;
   margin: 0 auto;
-  border: 1px solid var(--border);
-  border-width: 0 1px 0 1px;
-  min-height: 100vh;
+}
+.header {
+  border-bottom: 1px solid var(--border);
+}
+.header .title {
+  margin: 0;
+  line-height: 1;
+  font-size: 24px;
 }
 .auth {
   max-width: 300px;
@@ -85,6 +91,7 @@ a, a:visited {
 .block { display: block; }
 .flex { display: flex; }
 .flex-1 { flex: 1; }
+.gap-2 { gap: 8px; }
 .p-2 { padding: 8px; }
 .ml-2 { margin-left: 8px; }
 .mt-8 { margin-top: 32px; }
