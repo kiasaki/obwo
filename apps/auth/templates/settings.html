@@ -4,32 +4,10 @@
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <link rel="stylesheet" href="/static/lib/global.css" />
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>☁️</text></svg>">
-<style>
-.search {
-  max-width: 600px;
-  margin: 0 auto;
-  padding: 25vh 16px;
-}
-.search-result {
-  margin: 16px auto;
-}
-.search-result a {
-  display: block;
-  margin-bottom: 8px;
-}
-.search-result span {
-  font-size: calc(var(--size) - 4px);
-}
-.search-result img {
-  display: inline-block;
-  vertical-align: sub;
-  margin-right: 4px;
-}
-</style>
-<title>Obwo Search{{if .title}} | {{.title}}{{end}}</title>
+<title>Obwo Settings{{if .title}} | {{.title}}{{end}}</title>
 <div class="header">
   <div class="container flex">
-    <h1 class="title flex-1">Obwo Search</h1>
+    <h1 class="title flex-1">Obwo Settings</h1>
     <div class="flex gap-2">
       <a href="{{app "mail"}}">Mail</a>
       <a href="{{app "calendar"}}">Calendar</a>
@@ -45,4 +23,8 @@
       {{end}}
     </div>
   </div>
+</div>
+
+<div class="container">
+  Settings...
 </div>

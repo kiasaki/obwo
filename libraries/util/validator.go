@@ -91,7 +91,7 @@ func ValidateUnique(field string, dbTable, dbField, currentValue string) Validat
 	return func(values map[string]string) []string {
 		sql := fmt.Sprintf("select count(id) as c from %s where %s = ?", dbTable, dbField)
 		r := SQL(sql, values[field])
-		if r[0]["c"].(int64) > 0 && values[field] != currentValue {
+		if r[0]["c"].(float64) > 0 && values[field] != currentValue {
 			return []string{strings.Title(field) + " is already taken"}
 		}
 		return []string{}

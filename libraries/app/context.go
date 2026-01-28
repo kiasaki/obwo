@@ -10,23 +10,62 @@ import (
 	"strings"
 )
 
+var CookieName string = "obwo"
+
 type Context struct {
-	Server   *Server
-	Req      *http.Request
-	Res      http.ResponseWriter
-	Template *template.Template
+	Server      *Server
+	Req         *http.Request
+	Res         http.ResponseWriter
+	Template    *template.Template
+	Params      map[string]string
+	Errors      []string
+	currentUser util.J
 }
 
 func NewContext(s *Server, w http.ResponseWriter, r *http.Request) *Context {
-	c := &Context{Server: s, Res: w, Req: r}
+	c := &Context{Server: s, Res: w, Req: r, Params: map[string]string{}}
 	t, err := s.Template.Clone()
 	util.Check(err)
 	c.Template = t.Funcs(c.Funcs())
+
+	util.Check(c.Req.ParseForm())
+	for k, _ := range c.Req.URL.Query() {
+		c.Params[k] = c.Req.URL.Query().Get(k)
+	}
+	for k, _ := range c.Req.Form {
+		c.Params[k] = c.Req.Form.Get(k)
+	}
 	return c
+}
+
+func (c *Context) GetCookie(name string) string {
+	if cookie, err := c.Req.Cookie(name); err == nil {
+		return cookie.Value
+	}
+	return ""
+}
+
+func (c *Context) SetCookie(name, value string) {
+	http.SetCookie(c.Res, &http.Cookie{
+		Name:     name,
+		Value:    value,
+		HttpOnly: true,
+		Path:     "/",
+		MaxAge:   2147483647,
+	})
 }
 
 func (c *Context) Header(key, value string) {
 	c.Res.Header().Set(key, value)
+}
+
+func (c *Context) Redirect(url string, args ...interface{}) {
+	if len(args) > 0 {
+		url = fmt.Sprintf(url, args...)
+	}
+	c.Res.Header().Set("Location", url)
+	c.Res.WriteHeader(302)
+	c.Res.Write([]byte("Redirecting..."))
 }
 
 func (c *Context) Text(code int, s string) {
@@ -44,21 +83,22 @@ func (c *Context) Render(code int, name string, values util.J) {
 
 func (c *Context) Funcs() template.FuncMap {
 	return template.FuncMap{
+		"title": strings.Title,
 		"safe": func(s string) template.HTML {
 			return template.HTML(s)
 		},
 		"app": func(name string) template.URL {
-			scheme := "https://"
-			if strings.Contains(c.Req.Host, "localhost") {
-				scheme = "http://"
-			}
-			parts := strings.SplitN(c.Req.Host, ".", 2)
-			return template.URL(scheme + name + "." + parts[1])
+			return template.URL(c.App(name))
+		},
+		"param": func(name string) string {
+			return c.Params[name]
+		},
+		"errors": func() []string {
+			return c.Errors
 		},
 		"currentUser": func() util.J {
-			return nil
+			return c.CurrentUser()
 		},
-		"title": strings.Title,
 		"hasPrefix": func(s string, prefix string) bool {
 			return strings.HasPrefix(s, prefix)
 		},
@@ -94,6 +134,35 @@ func (c *Context) Funcs() template.FuncMap {
 	}
 }
 
-func (c *Context) Query(sql string, args ...interface{}) []util.J {
+func (c *Context) SQL(sql string, args ...interface{}) []util.J {
 	return util.SQL(sql, args...)
+}
+
+func (c *Context) App(name string) string {
+	scheme := "https://"
+	if strings.Contains(c.Req.Host, "localhost") {
+		scheme = "http://"
+	}
+	parts := strings.SplitN(c.Req.Host, ".", 2)
+	return scheme + name + "." + parts[1]
+}
+
+func (c *Context) CurrentUser() util.J {
+	if c.currentUser != nil {
+		return c.currentUser
+	}
+	token := c.GetCookie(CookieName)
+	if token == "" {
+		return nil
+	}
+	id, ok := util.ValidateToken(token, util.Env("SECRET", "secret"))
+	if !ok {
+		return nil
+	}
+	users := c.SQL("select * from users where id = ?", id)
+	if len(users) == 0 {
+		return nil
+	}
+	c.currentUser = users[0]
+	return c.currentUser
 }

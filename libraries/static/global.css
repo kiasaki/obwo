@@ -59,6 +59,13 @@ a, a:visited {
   text-align: center;
   cursor: pointer;
 }
+.error {
+  color: #ae0502;
+  background: #ffd8d8;
+  padding: 16px;
+  margin: 0 0 16px;
+  word-wrap: break-word;
+}
 .icon {
   width: 20px;
   height: 20px;
@@ -96,7 +103,6 @@ a, a:visited {
 .ml-2 { margin-left: 8px; }
 .mt-8 { margin-top: 32px; }
 .w-full { width: 100%; }
-.error { color: red; }
 .faded { opacity: 0.6; }
 .hidden { display: none; }
 .text-center { text-align: center; }

@@ -57,6 +57,12 @@ func (s *Server) wrap(handler func(c *Context)) func(w http.ResponseWriter, r *h
 				c.Text(500, fmt.Sprintf("ERROR %v", err))
 			}
 		}()
+
+		if c.Params["auth"] != "" {
+			c.SetCookie(CookieName, c.Params["auth"])
+			c.Redirect("/")
+			return
+		}
 		handler(c)
 	}
 }

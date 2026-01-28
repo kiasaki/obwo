@@ -272,8 +272,8 @@ func (s *Server) appendEntries() {
 
 			var rsp AppendEntriesResponse
 			log.Printf("Sending %d entries to %d for term %d\n", len(entries), s.cluster[i].Id, req.Term)
-			ok := s.rpcCall(i, "Server.HandleAppendEntriesRequest", req, &rsp)
-			if !ok {
+			err := s.rpcCall(i, "Server.HandleAppendEntriesRequest", req, &rsp)
+			if err != nil {
 				return // retry next tick
 			}
 
@@ -373,9 +373,9 @@ func (s *Server) Apply(command []byte) ([]byte, error) {
 			RPCMessage: RPCMessage{Term: s.currentTerm},
 			Command:    command,
 		}
-		ok := s.rpcCall(int(s.getVotedFor()), "Server.HandleApplyRequest", req, &rsp)
-		if !ok {
-			return nil, errors.New("error contacting leader")
+		err := s.rpcCall(int(s.getVotedFor()), "Server.HandleApplyRequest", req, &rsp)
+		if err != nil {
+			return nil, err
 		}
 		return rsp.Result, rsp.Error
 	}
@@ -469,7 +469,11 @@ func (s *Server) becomeLeader() {
 		}
 		olog.Log("new leader")
 		s.state = leaderState
-		s.log = append(s.log, Entry{Term: s.currentTerm, Command: nil})
+		s.log = append(s.log, Entry{
+			Id:      s.log[len(s.log)-1].Id + 1,
+			Term:    s.currentTerm,
+			Command: nil,
+		})
 		s.persist()
 		s.heartbeatTimeout = time.Now()
 	}
@@ -527,8 +531,8 @@ func (s *Server) requestVote() {
 			s.mu.Unlock()
 
 			var rsp RequestVoteResponse
-			ok := s.rpcCall(i, "Server.HandleRequestVoteRequest", req, &rsp)
-			if !ok {
+			err := s.rpcCall(i, "Server.HandleRequestVoteRequest", req, &rsp)
+			if err != nil {
 				return // retry later
 			}
 			s.mu.Lock()
@@ -567,7 +571,7 @@ func (s *Server) updateTerm(msg RPCMessage) bool {
 	return transitioned
 }
 
-func (s *Server) rpcCall(i int, name string, req, rsp any) bool {
+func (s *Server) rpcCall(i int, name string, req, rsp any) error {
 	s.mu.Lock()
 	c := s.cluster[i]
 	var err error
@@ -583,7 +587,7 @@ func (s *Server) rpcCall(i int, name string, req, rsp any) bool {
 	if err != nil {
 		log.Printf("error calling %s on %d: %s\n", name, c.Id, err)
 	}
-	return err == nil
+	return err
 }
 
 func (s *Server) persist() {

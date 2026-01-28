@@ -2,9 +2,15 @@
 <form class="container auth" method="post">
   <h1 class="title">Register</h1>
 
+  {{if errors}}
+    <div class="error">
+      {{range errors}}{{.}}<br/>{{end}}
+    </div>
+  {{end}}
+
   <div class="field">
     <label class="label">Username</label>
-    <input class="input" type="text" name="username" autofocus />
+    <input class="input" type="text" name="username" value="{{param "username"}}" autofocus />
   </div>
   <div class="field">
     <label class="label">Password</label>
@@ -12,7 +18,7 @@
   </div>
   <div class="field">
     <label class="label">Repeat Password</label>
-    <input class="input" type="password" name="passwordRepeat" />
+    <input class="input" type="password" name="passwordrepeat" />
   </div>
   <button class="button w-full" type="submit">Create my account</button>
 
