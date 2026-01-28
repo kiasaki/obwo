@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/json"
 	"fmt"
+	"io"
 	"net/http"
 )
 
@@ -15,8 +16,10 @@ func HttpGet(v interface{}, url string, headers map[string]string) {
 	resp, err := http.DefaultClient.Do(req)
 	Check(err)
 	defer resp.Body.Close()
+	bs, err := io.ReadAll(resp.Body)
+	Check(err)
 	if resp.StatusCode != 200 {
-		panic(fmt.Errorf("HttpGet: status not ok (%d)", resp.StatusCode))
+		panic(fmt.Errorf("HttpGet: status not ok %d: %s", resp.StatusCode, string(bs)))
 	}
-	Check(json.NewDecoder(resp.Body).Decode(v))
+	Check(json.Unmarshal(bs, v))
 }

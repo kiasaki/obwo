@@ -348,7 +348,7 @@ func (s *Server) HandleAppendEntriesRequest(req AppendEntriesRequest, rsp *Appen
 			assert("Capacity remains the same while we truncated.", cap(s.log), prevCap)
 		}
 
-		olog.Log("appending %d: %s", len(s.log), string(e.Command))
+		olog.Log("appending %d: %s", e.Id, string(e.Command))
 		if i < uint64(len(s.log)) {
 			assert("Existing log is the same as new log", s.log[i].Term, e.Term)
 		} else {
@@ -430,6 +430,9 @@ func (s *Server) advanceCommitIndex() {
 		if len(l.Command) != 0 {
 			olog.Log("applying %d: %s", s.lastApplied, string(l.Command))
 			res, err := s.statemachine.Apply(l.Command)
+			if err != nil {
+				olog.Log("applying error: %v", err)
+			}
 			if l.result != nil {
 				l.result <- ApplyResult{Result: res, Error: err}
 			}

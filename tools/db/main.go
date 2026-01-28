@@ -61,11 +61,11 @@ func main() {
 		c := Command{Query: sql, Args: args}
 		var err error
 		var result []byte
-		if strings.HasPrefix(strings.ToLower(sql), "select") {
+		if strings.HasPrefix(strings.ToLower(strings.TrimSpace(sql)), "select") {
 			result, err = sm.Execute(c)
 		} else {
-			bs, err := json.Marshal(c)
-			check(err)
+			bs, e := json.Marshal(c)
+			check(e)
 			result, err = s.Apply(bs)
 		}
 		check(err)
@@ -81,41 +81,10 @@ func sendJson(w http.ResponseWriter, code int, v interface{}) {
 	check(json.NewEncoder(w).Encode(v))
 }
 
-func (s *State) Restore() PersistentState {
-	state := PersistentState{}
-	_, err := execute(s.db, "create table if not exists journal (id integer not null primary key, voted integer not null, term integer not null, command text not null)")
-	check(err)
-	entries, err := execute(s.db, "select * from journal")
-	check(err)
-	if len(entries) == 0 {
-		return state
-	}
-	for _, e := range entries {
-		state.Log = append(state.Log, Entry{
-			Id:      e["id"].(int64),
-			Term:    uint64(e["term"].(int64)),
-			Command: []byte(e["command"].(string)),
-		})
-	}
-	state.VotedFor = uint64(entries[len(entries)-1]["voted"].(int64))
-	state.CurrentTerm = uint64(entries[len(entries)-1]["term"].(int64))
-	return state
-}
-
-func (s *State) Persist(state PersistentState) {
-	r, err := execute(s.db, "select coalesce(max(id), -1) as id from journal")
-	check(err)
-	id := r[0]["id"].(int64)
-	for _, l := range state.Log {
-		if l.Id <= id {
-			continue
-		}
-		_, err := execute(s.db, "insert into journal (id, voted, term, command) values (?, ?, ?, ?)", l.Id, state.VotedFor, l.Term, string(l.Command))
-		check(err)
-	}
-}
-
 func (s *State) Apply(cmd []byte) ([]byte, error) {
+	if len(cmd) == 0 {
+		return []byte("[]"), nil
+	}
 	c := Command{}
 	check(json.Unmarshal(cmd, &c))
 	return s.Execute(c)
@@ -162,4 +131,38 @@ func execute(db *sql.DB, sql string, args ...any) ([]util.J, error) {
 		results = append(results, result)
 	}
 	return results, nil
+}
+
+func (s *State) Restore() PersistentState {
+	state := PersistentState{}
+	_, err := execute(s.db, "create table if not exists journal (id integer not null primary key, voted integer not null, term integer not null, command text not null)")
+	check(err)
+	entries, err := execute(s.db, "select * from journal")
+	check(err)
+	if len(entries) == 0 {
+		return state
+	}
+	for _, e := range entries {
+		state.Log = append(state.Log, Entry{
+			Id:      e["id"].(int64),
+			Term:    uint64(e["term"].(int64)),
+			Command: []byte(e["command"].(string)),
+		})
+	}
+	state.VotedFor = uint64(entries[len(entries)-1]["voted"].(int64))
+	state.CurrentTerm = uint64(entries[len(entries)-1]["term"].(int64))
+	return state
+}
+
+func (s *State) Persist(state PersistentState) {
+	r, err := execute(s.db, "select coalesce(max(id), -1) as id from journal")
+	check(err)
+	id := r[0]["id"].(int64)
+	for _, l := range state.Log {
+		if l.Id <= id {
+			continue
+		}
+		_, err := execute(s.db, "insert into journal (id, voted, term, command) values (?, ?, ?, ?)", l.Id, state.VotedFor, l.Term, string(l.Command))
+		check(err)
+	}
 }

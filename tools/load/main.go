@@ -6,10 +6,22 @@ import (
 	"net/url"
 	"obwo/libraries/log"
 	"strings"
+	"sync"
 )
 
 func main() {
 	log.Setup("load")
+
+	dbURL0, _ := url.Parse("http://localhost:8100")
+	dbURL1, _ := url.Parse("http://localhost:8101")
+	dbURL2, _ := url.Parse("http://localhost:8102")
+	dbProxies := []*httputil.ReverseProxy{
+		httputil.NewSingleHostReverseProxy(dbURL0),
+		httputil.NewSingleHostReverseProxy(dbURL1),
+		httputil.NewSingleHostReverseProxy(dbURL2),
+	}
+	var dbCounter int
+	var dbMutex sync.Mutex
 
 	authURL, _ := url.Parse("http://localhost:9001")
 	searchURL, _ := url.Parse("http://localhost:9002")
@@ -23,6 +35,12 @@ func main() {
 			authProxy.ServeHTTP(w, r)
 		case "search":
 			searchProxy.ServeHTTP(w, r)
+		case "db":
+			dbMutex.Lock()
+			index := dbCounter % 3
+			dbCounter++
+			dbMutex.Unlock()
+			dbProxies[index].ServeHTTP(w, r)
 		default:
 			http.NotFound(w, r)
 		}

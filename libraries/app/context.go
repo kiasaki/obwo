@@ -2,6 +2,8 @@ package app
 
 import (
 	"bytes"
+	"encoding/json"
+	"fmt"
 	"html/template"
 	"net/http"
 	"obwo/libraries/util"
@@ -56,5 +58,42 @@ func (c *Context) Funcs() template.FuncMap {
 		"currentUser": func() util.J {
 			return nil
 		},
+		"title": strings.Title,
+		"hasPrefix": func(s string, prefix string) bool {
+			return strings.HasPrefix(s, prefix)
+		},
+		"formatSize": func(b int64) string {
+			const unit = 1024
+			if b < unit {
+				return fmt.Sprintf("%d B", b)
+			}
+			div, exp := int64(unit), 0
+			for n := b / unit; n >= unit; n /= unit {
+				div *= unit
+				exp++
+			}
+			return fmt.Sprintf("%.1f %ciB", float64(b)/float64(div), "KMGTPE"[exp])
+		},
+		"json": func(i interface{}) string {
+			bs, err := json.MarshalIndent(i, "", "  ")
+			util.Check(err)
+			return string(bs)
+		},
+		"mod": func(i, m int) int {
+			return i % m
+		},
+		"div": func(a, b int64) float64 {
+			return float64(a) / float64(b)
+		},
+		"add": func(a, b int) int {
+			return a + b
+		},
+		"minus": func(a, b int) int {
+			return a - b
+		},
 	}
+}
+
+func (c *Context) Query(sql string, args ...interface{}) []util.J {
+	return util.SQL(sql, args...)
 }
