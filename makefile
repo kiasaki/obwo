@@ -20,4 +20,9 @@ build:
 	go build -o build/load tools/load/main.go
 	go build -o build/db tools/db/*.go
 
+testdb:
+	curl http://localhost:8100/?sql=$(shell echo "create table users (id, name)" | jq -Rr @uri)
+	curl http://localhost:8100/?sql=$(shell echo "insert into users values (1, 'joe')" | jq -Rr @uri)
+	curl http://localhost:8100/?sql=$(shell echo "select * from users" | jq -Rr @uri)
+
 .PHONY: build

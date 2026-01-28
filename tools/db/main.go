@@ -23,7 +23,7 @@ type Command struct {
 	Args  []string `json:"a"`
 }
 
-type statemachine struct {
+type State struct {
 	db *sql.DB
 }
 
@@ -41,8 +41,10 @@ func main() {
 
 	db, err := sql.Open("sqlite", path.Join(*dataDir, fmt.Sprintf("db%d.sqlite3", *index))+"?_pragma=journal_mode=WAL&_time_integer_format=unix_milli")
 	check(err)
-	sm := &statemachine{db: db}
+	sm := &State{db: db}
 	s := NewServer(members, sm, *dataDir, *index)
+	s.Restore = sm.Restore
+	s.Persist = sm.Persist
 	s.Start()
 
 	check(http.ListenAndServe(*listen, http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -79,24 +81,65 @@ func sendJson(w http.ResponseWriter, code int, v interface{}) {
 	check(json.NewEncoder(w).Encode(v))
 }
 
-func (s *statemachine) Apply(cmd []byte) ([]byte, error) {
+func (s *State) Restore() PersistentState {
+	state := PersistentState{}
+	_, err := execute(s.db, "create table if not exists journal (id integer not null primary key, voted integer not null, term integer not null, command text not null)")
+	check(err)
+	entries, err := execute(s.db, "select * from journal")
+	check(err)
+	if len(entries) == 0 {
+		return state
+	}
+	for _, e := range entries {
+		state.Log = append(state.Log, Entry{
+			Id:      e["id"].(int64),
+			Term:    uint64(e["term"].(int64)),
+			Command: []byte(e["command"].(string)),
+		})
+	}
+	state.VotedFor = uint64(entries[len(entries)-1]["voted"].(int64))
+	state.CurrentTerm = uint64(entries[len(entries)-1]["term"].(int64))
+	return state
+}
+
+func (s *State) Persist(state PersistentState) {
+	r, err := execute(s.db, "select coalesce(max(id), -1) as id from journal")
+	check(err)
+	id := r[0]["id"].(int64)
+	for _, l := range state.Log {
+		if l.Id <= id {
+			continue
+		}
+		_, err := execute(s.db, "insert into journal (id, voted, term, command) values (?, ?, ?, ?)", l.Id, state.VotedFor, l.Term, string(l.Command))
+		check(err)
+	}
+}
+
+func (s *State) Apply(cmd []byte) ([]byte, error) {
 	c := Command{}
 	check(json.Unmarshal(cmd, &c))
 	return s.Execute(c)
 }
 
-func (s *statemachine) Execute(c Command) ([]byte, error) {
-	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
-	defer cancel()
+func (s *State) Execute(c Command) ([]byte, error) {
 	args := []interface{}{}
 	for _, v := range c.Args {
 		args = append(args, v)
 	}
-	rows, err := s.db.QueryContext(ctx, c.Query, args...)
+	results, err := execute(s.db, c.Query, args...)
 	if err != nil {
 		return nil, err
 	}
+	return json.Marshal(results)
+}
 
+func execute(db *sql.DB, sql string, args ...any) ([]util.J, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	rows, err := db.QueryContext(ctx, sql, args...)
+	if err != nil {
+		return nil, err
+	}
 	cols, err := rows.Columns()
 	if err != nil {
 		return nil, err
@@ -118,5 +161,5 @@ func (s *statemachine) Execute(c Command) ([]byte, error) {
 		}
 		results = append(results, result)
 	}
-	return json.Marshal(results)
+	return results, nil
 }

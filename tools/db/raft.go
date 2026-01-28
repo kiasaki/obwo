@@ -1,3 +1,4 @@
+// see https://notes.eatonphil.com/2023-05-25-raft.html
 package main
 
 import (
@@ -25,7 +26,7 @@ type RPCMessage struct {
 type RequestVoteRequest struct {
 	RPCMessage
 	CandidateId  uint64
-	LastLogIndex uint64
+	LastLogIndex int64
 	LastLogTerm  uint64
 }
 
@@ -69,6 +70,7 @@ type ApplyResult struct {
 }
 
 type Entry struct {
+	Id      int64
 	Command []byte
 	Term    uint64
 	result  chan ApplyResult
@@ -98,9 +100,11 @@ const (
 )
 
 type Server struct {
-	done   bool
-	server *http.Server
-	mu     sync.Mutex
+	done    bool
+	server  *http.Server
+	mu      sync.Mutex
+	Persist func(PersistentState)
+	Restore func() PersistentState
 	// persisted
 	currentTerm uint64
 	log         []Entry
@@ -138,8 +142,8 @@ func (s *Server) Start() {
 	s.mu.Lock()
 	s.state = followerState
 	s.done = false
-	s.mu.Unlock()
 	s.restore()
+	s.mu.Unlock()
 
 	prefix := fmt.Sprintf("[db%d] ", s.id)
 	log.Default().SetPrefix(prefix)
@@ -201,9 +205,9 @@ func (s *Server) HandleRequestVoteRequest(req RequestVoteRequest, rsp *RequestVo
 		return nil
 	}
 	lastLogTerm := s.log[len(s.log)-1].Term
-	logLen := uint64(len(s.log) - 1)
+	lastLogId := s.log[len(s.log)-1].Id
 	logOk := req.LastLogTerm > lastLogTerm ||
-		(req.LastLogTerm == lastLogTerm && req.LastLogIndex >= logLen)
+		(req.LastLogTerm == lastLogTerm && req.LastLogIndex >= lastLogId)
 	grant := req.Term == s.currentTerm &&
 		logOk &&
 		(s.getVotedFor() == 0 || s.getVotedFor() == req.CandidateId)
@@ -379,6 +383,7 @@ func (s *Server) Apply(command []byte) ([]byte, error) {
 	log.Println("processing new entry")
 	ch := make(chan ApplyResult)
 	s.log = append(s.log, Entry{
+		Id:      s.log[len(s.log)-1].Id + 1,
 		Term:    s.currentTerm,
 		Command: command,
 		result:  ch,
@@ -504,7 +509,7 @@ func (s *Server) requestVote() {
 
 		go func(i int) {
 			s.mu.Lock()
-			lastLogIndex := uint64(len(s.log) - 1)
+			lastLogIndex := s.log[len(s.log)-1].Id
 			lastLogTerm := s.log[len(s.log)-1].Term
 			olog.Log("request vote from %d", s.cluster[i].Id)
 
@@ -579,41 +584,48 @@ func (s *Server) rpcCall(i int, name string, req, rsp any) bool {
 }
 
 func (s *Server) persist() {
-	s.fd.Truncate(0)
-	s.fd.Seek(0, 0)
-	check(json.NewEncoder(s.fd).Encode(PersistentState{
+	state := PersistentState{
 		Log:         s.log,
 		VotedFor:    s.getVotedFor(),
 		CurrentTerm: s.currentTerm,
-	}))
+	}
+	if s.Persist != nil {
+		s.Persist(state)
+		return
+	}
+	s.fd.Truncate(0)
+	s.fd.Seek(0, 0)
+	check(json.NewEncoder(s.fd).Encode(state))
 	check(s.fd.Sync())
-	log.Printf("presisted term:%d log:%d voted:%d\n", s.currentTerm, len(s.log), s.getVotedFor())
+	log.Printf("presisted term:%d log:%d voted:%d\n", s.currentTerm, len(s.log), state.VotedFor)
 }
 
 func (s *Server) restore() {
-	s.mu.Lock()
-	defer s.mu.Unlock()
-	if s.fd == nil {
-		var err error
-		s.fd, err = os.OpenFile(path.Join(s.metadataDir, fmt.Sprintf("db_%d.dat", s.id)), os.O_SYNC|os.O_CREATE|os.O_RDWR, 0755)
-		check(err)
-	}
-	s.fd.Seek(0, 0)
-	var v PersistentState
-	err := json.NewDecoder(s.fd).Decode(&v)
-	if err == io.EOF {
+	defer func() {
 		if len(s.log) == 0 {
 			s.log = append(s.log, Entry{})
 		}
+	}()
+	var v PersistentState
+	if s.Restore != nil {
+		v = s.Restore()
 		return
+	} else {
+		if s.fd == nil {
+			var err error
+			s.fd, err = os.OpenFile(path.Join(s.metadataDir, fmt.Sprintf("db_%d.dat", s.id)), os.O_SYNC|os.O_CREATE|os.O_RDWR, 0755)
+			check(err)
+		}
+		s.fd.Seek(0, 0)
+		err := json.NewDecoder(s.fd).Decode(&v)
+		if err == io.EOF {
+			return
+		}
+		check(err)
 	}
-	check(err)
 	s.log = v.Log
 	s.setVotedFor(v.VotedFor)
 	s.currentTerm = v.CurrentTerm
-	if len(s.log) == 0 {
-		s.log = append(s.log, Entry{})
-	}
 }
 
 func (s *Server) setVotedFor(id uint64) {
