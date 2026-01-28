@@ -28,10 +28,6 @@ func main() {
 	server.Start()
 }
 
-func handleSettings(c *app.Context) {
-	c.Render(200, "settings", util.J{})
-}
-
 func handleLogin(c *app.Context) {
 	u := c.CurrentUser()
 	if u != nil {
@@ -83,6 +79,40 @@ func handleRegister(c *app.Context) {
 	}
 render:
 	c.Render(200, "register", util.J{"title": "Register"})
+}
+
+func handleSettings(c *app.Context) {
+	success := false
+	user := c.CurrentUser()
+	if c.Params["username"] == "" {
+		c.Params["username"] = user.Get("username")
+	}
+	if c.Req.Method == "POST" {
+		c.Errors = util.Validate(c.Params,
+			util.ValidateRegexp("username", regexp.MustCompile("^[a-z0-9]{3,16}$")),
+			util.ValidateUnique("username", "users", "username", user.Get("username")),
+		)
+		if len(c.Errors) > 0 {
+			goto render
+		}
+		if c.Params["username"] != user.Get("username") {
+			c.SQL("update users set username = ? where id = ?", c.Params["username"], user.GetI("id"))
+			user.Set("username", c.Params["username"])
+			success = true
+		}
+		newPassword := c.Params["password"]
+		if newPassword != "" {
+			if len(newPassword) < 8 || len(newPassword) > 64 {
+				c.Errors = append(c.Errors, "Password not between 8 and 64 characters.")
+				goto render
+			}
+			passwordHash := util.CreatePassword(newPassword)
+			c.SQL("update users set password = ? where id = ?", passwordHash, user.GetI("id"))
+			success = true
+		}
+	}
+render:
+	c.Render(200, "settings", util.J{"success": success})
 }
 
 func handleNotFound(c *app.Context) {

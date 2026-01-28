@@ -19,6 +19,23 @@ func (j J) Get(key string) string {
 	return ""
 }
 
+func (j J) GetI(key string) int64 {
+	if v, ok := j[key].(int64); ok {
+		return v
+	}
+	if v, ok := j[key].(float64); ok {
+		return int64(v)
+	}
+	if v, ok := j[key].(string); ok {
+		return int64(StringToInt(v))
+	}
+	return 0
+}
+
+func (j J) Set(key string, value interface{}) {
+	j[key] = value
+}
+
 func Check(err error) {
 	if err != nil {
 		panic(err)

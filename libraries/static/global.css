@@ -2,7 +2,7 @@
 :root {
   --font: "font", sans-serif;
   --size: 18px;
-  --primary: #34baf5;
+  --primary: #0079ad;
   --foreground: #222;
   --background: #fff;
   --border: #bbb;
@@ -37,6 +37,12 @@ a, a:visited {
   font-size: calc(var(--size) - 2px);
   margin-bottom: 4px;
 }
+.help {
+  display: block;
+  font-size: calc(var(--size) - 2px);
+  margin-top: 4px;
+  opacity: 0.75;
+}
 .input {
   padding: 8px 16px;
   min-width: 240px;
@@ -65,6 +71,12 @@ a, a:visited {
   padding: 16px;
   margin: 0 0 16px;
   word-wrap: break-word;
+}
+.success {
+  color: #23a04a;
+  background: #defee8;
+  padding: 16px;
+  margin: 0 0 16px;
 }
 .icon {
   width: 20px;

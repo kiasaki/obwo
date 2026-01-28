@@ -26,5 +26,29 @@
 </div>
 
 <div class="container">
-  Settings...
+<form method="post" style="max-width: 500px">
+  <h1 class="title">Profile</h1>
+
+  {{if .success}}
+    <div class="success">Profile updated.</div>
+  {{end}}
+  {{if errors}}
+    <div class="error">
+      {{range errors}}{{.}}<br/>{{end}}
+    </div>
+  {{end}}
+
+  <div class="field">
+    <label class="label">Username</label>
+    <input class="input" type="text" name="username" value="{{param "username"}}" />
+  </div>
+
+  <div class="field">
+    <label class="label">Password</label>
+    <input class="input" type="password" name="password" />
+    <span class="help">Optional: Only enter one if you want to update it.</span>
+  </div>
+
+  <button class="button w-full" type="submit">Update</button>
+</form>
 </div>
